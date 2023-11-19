@@ -1,8 +1,13 @@
-all: 
+run: 
 	dune exec ray --profile=release
-b: 
+build: 
 	dune build --profile=release
-c:
+clean:
 	dune clean
-w:
+watch:
 	dune build -w
+promote:
+	dune promote
+
+runtest:
+	dune runtest
