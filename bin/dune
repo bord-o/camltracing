@@ -1,4 +1,4 @@
 (executable
  (public_name ray)
  (name main)
- (libraries ray))
+ (libraries ray progress))
