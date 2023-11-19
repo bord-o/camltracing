@@ -7,7 +7,7 @@ clean:
 watch:
 	dune build -w
 promote:
-	dune promote
+	dune promote  --profile=release
 
 runtest:
-	dune runtest
+	dune runtest  --profile=release

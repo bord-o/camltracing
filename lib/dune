@@ -1,2 +1,3 @@
 (library
- (name ray))
+ (name ray)
+ (preprocess (pps ppx_deriving.std)))
