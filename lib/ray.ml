@@ -21,12 +21,18 @@ module Ray = struct
     let disc = (b *. b) -. (4.0 *. a *. c) in
 
     (* F.printf "%f\n" disc; *)
-    disc >= 0.0
+    match disc with
+    | x when x < 0. -> -1.
+    | _ -> (-.b -. sqrt disc) /. (2.0 *. a)
 
   let ray_color (ray : t) : Pixel.t =
     let open Vec3 in
-    if hit_sphere (Point3.to_vec @@ Point3.create (0., 0., -1.)) 0.5 ray then
-      { r = 255; g = 0; b = 0 }
+    let t = hit_sphere (Point3.to_vec @@ Point3.create (0., 0., -1.)) 0.5 ray in
+    if t > 0. then
+      let norm =
+        unitize @@ sub (Point3.to_vec (at ray t)) (create (0., 0., -1.))
+      in
+      Pixel.of_vec @@ create (1. +. x norm, 1. +. y norm, 1. +. z norm)
     else
       let unit_direction = unitize ray.dir in
       let white = Pixel.to_vec { r = 255; g = 255; b = 255 } in
