@@ -38,7 +38,7 @@ module Image : Image = struct
       (f : int -> int -> Pixel.t) =
     let pix_count = w * h in
     let progress = ref 0 in
-    let b = Buffer.create 256 in
+    let b = Buffer.create 66536 in
     Buffer.add_string b @@ F.sprintf "P3@\n%i %i@\n255\n" w h;
 
     (* setup the file *)

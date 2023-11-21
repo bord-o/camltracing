@@ -11,6 +11,7 @@ module type Vec3 = sig
   val sub : t -> t -> t
   val mul : t -> float -> t
   val div : t -> float -> t
+  val dot : t -> t -> float
   val length_squared : t -> float
   val length : t -> float
   val cross : t -> t -> t
@@ -35,7 +36,7 @@ module Vec3 : Vec3 = struct
   let div t scalar = { x = t.x /. scalar; y = t.y /. scalar; z = t.z /. scalar }
   let length_squared t = (t.x *. t.x) +. (t.y *. t.y) +. (t.z *. t.z)
   let length t = Float.sqrt (length_squared t)
-  let dot l r = { x = l.x *. r.x; y = l.y *. r.y; z = l.z *. r.z }
+  let dot l r = (l.x *. r.x) +. (l.y *. r.y) +. (l.z *. r.z)
   let unitize t = div t (length t)
 
   let cross l r =
