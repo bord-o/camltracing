@@ -3,12 +3,13 @@ open Image
 open Vec3
 open Point3
 open Ray
+open Object
 module F = Format
 
 (* Configuration for viewport *)
 (* let aspect_ratio = 16.0 /. 9.0 *)
 let aspect_ratio = 16. /. 9.
-let image_width = 1600
+let image_width = 400
 
 let image_height =
   let h = int_of_float @@ (float_of_int image_width /. aspect_ratio) in
@@ -66,7 +67,8 @@ let run_smpl () =
        else () *)
     ()
   in
-  F.printf "Rendering with h: %i, w: %i" image_height image_width;
+  print_endline
+  @@ F.sprintf "Rendering with h: %i, w: %i" image_height image_width;
   let i =
     Image.create image_width image_height progress (fun i j ->
         let open Vec3 in
@@ -76,38 +78,56 @@ let run_smpl () =
           let calc_y = mul (Point3.to_vec p_delta_v) yc in
           add pixel00_loc (add calc_x calc_y)
         in
-
         let ray_direction = sub pixel_center @@ Point3.to_vec camera_center in
         let ray = Ray.create camera_center ray_direction in
 
-        let pixel_color : Pixel.t = Ray.ray_color ray in
+        let sphere = `Sphere (Point3.of_int_triple (0, 0, -1), 0.5) in
+        let spheres =
+          [
+            `Sphere (Point3.create (0., 0., -1.), 0.5);
+            `Sphere (Point3.create (0., -100.5, -1.), 100.);
+          ]
+        in
+        let hits =
+          List.map
+            (fun sphere ->
+              Object.hit sphere ray ~ray_tmin:Float.zero
+                ~ray_tmax:Float.infinity)
+            spheres
+        in
+        let hit =
+          Object.hit sphere ray ~ray_tmin:Float.zero ~ray_tmax:Float.infinity
+        in
+        (* let pixel_color : Pixel.t = Ray.ray_color ray hit in *)
+        let pixel_color : Pixel.t = Ray.color_world ray hits in
         pixel_color)
   in
   Image.to_file "/home/bordo/ray/test/out.ppm" i
 
 (* Run with progress bar *)
-let run_pbar () =
-  let render pbar =
-    F.printf "Rendering with h: %i, w: %i" image_height image_width;
-    let i =
-      Image.create image_width image_height pbar (fun i j ->
-          let open Vec3 in
-          let pixel_center =
-            let xc, yc = (float_of_int i, float_of_int j) in
-            let calc_x = mul (Point3.to_vec p_delta_u) xc in
-            let calc_y = mul (Point3.to_vec p_delta_v) yc in
-            add pixel00_loc (add calc_x calc_y)
-          in
+(* let run_pbar () =
+   let render pbar =
+     print_endline
+     @@ F.sprintf "Rendering with h: %i, w: %i" image_height image_width;
+     let i =
+       Image.create image_width image_height pbar (fun i j ->
+           let open Vec3 in
+           let pixel_center =
+             let xc, yc = (float_of_int i, float_of_int j) in
+             let calc_x = mul (Point3.to_vec p_delta_u) xc in
+             let calc_y = mul (Point3.to_vec p_delta_v) yc in
+             add pixel00_loc (add calc_x calc_y)
+           in
 
-          let ray_direction = sub pixel_center @@ Point3.to_vec camera_center in
-          let ray = Ray.create camera_center ray_direction in
+           let ray_direction = sub pixel_center @@ Point3.to_vec camera_center in
+           let ray = Ray.create camera_center ray_direction in
 
-          let pixel_color = Ray.ray_color ray in
-          pixel_color)
-    in
-    Image.to_file "/home/bordo/ray/test/out.ppm" i
-  in
-  Progress.with_reporter (bar ~total:(image_height * image_width))
-  @@ fun reporter -> render (fun c f -> reporter 1)
+           let pixel_color = Ray.ray_color ray in
+           pixel_color)
+     in
+     Image.to_file "/home/bordo/ray/test/out.ppm" i
+   in
+   Progress.with_reporter (bar ~total:(image_height * image_width))
+   @@ fun reporter -> render (fun c f -> reporter 1) *)
 
 let () = run_smpl ()

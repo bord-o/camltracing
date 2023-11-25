@@ -5,6 +5,7 @@ module F = Format
 
 module Ray = struct
   type t = { origin : Point3.t; dir : Vec3.t }
+  type hit_record = { p : Point3.t; normal : Vec3.t; t : float; front : bool }
 
   let create origin dir = { origin; dir }
 
@@ -12,33 +13,39 @@ module Ray = struct
     let dir = Point3.of_vec t.dir in
     Point3.add t.origin (Point3.mul dir scalar)
 
-  let hit_sphere (center : Vec3.t) (radius : float) (ray : t) =
+  let ray_color (ray : t) (hr : hit_record option) : Pixel.t =
     let open Vec3 in
-    let oc = sub (Point3.to_vec ray.origin) center in
-    let a = dot ray.dir ray.dir in
-    let b = 2.0 *. dot oc ray.dir in
-    let c = dot oc oc -. (radius *. radius) in
-    let disc = (b *. b) -. (4.0 *. a *. c) in
+    match hr with
+    | Some r ->
+        (* Color our hit pixel *)
+        Pixel.of_vec
+        @@ create (1. +. x r.normal, 1. +. y r.normal, 1. +. z r.normal)
+    | None ->
+        (* generate a backdrop *)
+        let unit_direction = unitize ray.dir in
+        let white = Pixel.to_vec { r = 255; g = 255; b = 255 } in
+        let blue = Pixel.to_vec { r = 127; g = 178; b = 255 } in
+        let a = 0.5 *. (1.0 +. y unit_direction) in
+        let vecColor = add (mul white (1.0 -. a)) (mul blue a) in
+        Pixel.of_vec vecColor
 
-    (* F.printf "%f\n" disc; *)
-    match disc with
-    | x when x < 0. -> -1.
-    | _ -> (-.b -. sqrt disc) /. (2.0 *. a)
-
-  let ray_color (ray : t) : Pixel.t =
-    let open Vec3 in
-    let t = hit_sphere (Point3.to_vec @@ Point3.create (0., 0., -1.)) 0.5 ray in
-    if t > 0. then
-      let norm =
-        unitize @@ sub (Point3.to_vec (at ray t)) (create (0., 0., -1.))
+  let color_world ray world =
+    let results = List.filter (fun hr -> Option.is_some hr) world in
+    if List.length results = 0 then ray_color ray None
+    else (
+      List.iter
+        (fun x ->
+          let r = Option.get x in
+          Printf.printf "%f  " r.t)
+        results;
+      print_newline ();
+      let sorted =
+        List.sort
+          (fun l r -> Float.compare (Option.get l).t (Option.get r).t)
+          results
       in
-      Pixel.of_vec @@ create (1. +. x norm, 1. +. y norm, 1. +. z norm)
-    else
-      let unit_direction = unitize ray.dir in
-      let white = Pixel.to_vec { r = 255; g = 255; b = 255 } in
-      let blue = Pixel.to_vec { r = 127; g = 178; b = 255 } in
-      let a = 0.5 *. (1.0 +. y unit_direction) in
-      let vecColor = add (mul white (1.0 -. a)) (mul blue a) in
-      Pixel.of_vec vecColor
+
+      ray_color ray @@ List.hd sorted)
+
   (* linear interpolation*)
 end
